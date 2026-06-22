@@ -143,7 +143,7 @@ function StepBar({ current }) {
 
 // PASO 1
 function Step1({ data, setData, onNext }) {
-    const ok = data.nombre && data.telefono && data.localidad;
+    const ok = data.nombre && data.telefono && data.localidad && data.pedidoMedico !== null;
     return (
         <div>
             <h2 style={{ color: C.navy, fontWeight: 900, fontSize: 21, marginBottom: 4 }}>Datos personales</h2>
@@ -152,6 +152,28 @@ function Step1({ data, setData, onNext }) {
             <Field label="Teléfono" value={data.telefono} onChange={v => setData({ ...data, telefono: v })} placeholder="381 123 4567" type="tel" />
             <Field label="Localidad" value={data.localidad} onChange={v => setData({ ...data, localidad: v })} placeholder="Chilecito, La Rioja" />
             <Field label="Edad" value={data.edad} onChange={v => setData({ ...data, edad: v })} placeholder="32" type="number" />
+            {/* Pedido médico */}
+            <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.navy, marginBottom: 8, textTransform: "uppercase", letterSpacing: .5 }}>¿Tiene pedido médico?</label>
+                <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+                    {[{ val: true, label: "Sí, tengo receta" }, { val: false, label: "No tengo receta" }].map(opt => (
+                        <button key={String(opt.val)} onClick={() => setData({ ...data, pedidoMedico: opt.val, recetaFile: opt.val ? data.recetaFile : "" })}
+                            style={{ flex: 1, padding: "11px 8px", borderRadius: 10, border: `2px solid \${data.pedidoMedico === opt.val ? C.teal : C.border}`, background: data.pedidoMedico === opt.val ? `\${C.teal}15` : C.white, color: data.pedidoMedico === opt.val ? C.teal : C.gray, fontWeight: 700, fontSize: 13, cursor: "pointer", transition: "all .2s", fontFamily: "inherit" }}>
+                            {opt.label}
+                        </button>
+                    ))}
+                </div>
+                {data.pedidoMedico === true && (
+                    <label htmlFor="receta-upload" style={{ cursor: "pointer", display: "block" }}>
+                        <div style={{ border: `2px dashed \${data.recetaFile ? C.green : C.teal}`, borderRadius: 12, padding: "16px", textAlign: "center", background: data.recetaFile ? `\${C.green}08` : `\${C.teal}05` }}>
+                            <div style={{ fontSize: 24, marginBottom: 6 }}>{data.recetaFile ? "✅" : "📎"}</div>
+                            <div style={{ fontWeight: 700, color: data.recetaFile ? C.green : C.teal, fontSize: 14 }}>{data.recetaFile ? "✓ " + data.recetaFile : "Subir receta médica"}</div>
+                            <div style={{ fontSize: 11, color: C.gray, marginTop: 4 }}>JPG, PNG o PDF</div>
+                        </div>
+                        <input type="file" id="receta-upload" accept="image/*,.pdf" style={{ display: "none" }} onChange={e => setData({ ...data, recetaFile: e.target.files[0]?.name || "" })} />
+                    </label>
+                )}
+            </div>
             <Btn onClick={onNext} disabled={!ok}>Siguiente →</Btn>
         </div>
     );
@@ -275,6 +297,7 @@ function Step4({ formData, onSubmit, onBack, saving }) {
     const { s1, s2, s3 } = formData;
     const secs = [
         { title: "👤 Datos personales", rows: [["Nombre", s1.nombre], ["Teléfono", s1.telefono], ["Localidad", s1.localidad], ["Edad", s1.edad ? `${s1.edad} años` : "-"]] },
+        { title: "📋 Pedido médico", rows: [["¿Tiene pedido médico?", s1.pedidoMedico === true ? "✓ Sí" : s1.pedidoMedico === false ? "No" : "-"], ["Receta", s1.pedidoMedico ? (s1.recetaFile || "Sin archivo") : "No aplica"]] },
         { title: "📏 Medidas", rows: [["Calzado", `N° ${s2.calzado}`], ["Pie der. — Largo", `${s2.largoDer} cm`], ["Pie der. — Ancho metatarso", `${s2.anchoDer} cm`], ["Pie izq. — Largo", `${s2.largoIzq} cm`], ["Pie izq. — Ancho metatarso", `${s2.anchoIzq} cm`]] },
         { title: "📸 Fotos", rows: [["Vista superior (ambos pies)", s3.fotoArriba ? "✓ Cargada" : "—"], ["Vista posterior (ambos pies)", s3.fotoAtras ? "✓ Cargada" : "—"]] },
     ];
@@ -327,10 +350,10 @@ function Step5({ nombre, onReset }) {
 function UserFlow({ onBack }) {
     const [step, setStep] = useState(0);
     const [saving, setSaving] = useState(false);
-    const [s1, setS1] = useState({ nombre: "", telefono: "", localidad: "", edad: "" });
+    const [s1, setS1] = useState({ nombre: "", telefono: "", localidad: "", edad: "", pedidoMedico: null, recetaFile: "" });
     const [s2, setS2] = useState({ calzado: "", largoDer: "", anchoDer: "", largoIzq: "", anchoIzq: "" });
     const [s3, setS3] = useState({ fotoArriba: "", fotoAtras: "" });
-    const reset = () => { setStep(0); setSaving(false); setS1({ nombre: "", telefono: "", localidad: "", edad: "" }); setS2({ calzado: "", largoDer: "", anchoDer: "", largoIzq: "", anchoIzq: "" }); setS3({ fotoArriba: "", fotoAtras: "" }); };
+    const reset = () => { setStep(0); setSaving(false); setS1({ nombre: "", telefono: "", localidad: "", edad: "", pedidoMedico: null, recetaFile: "" }); setS2({ calzado: "", largoDer: "", anchoDer: "", largoIzq: "", anchoIzq: "" }); setS3({ fotoArriba: "", fotoAtras: "" }); };
 
     const handleSubmit = () => {
         const now = new Date();
@@ -353,6 +376,8 @@ function UserFlow({ onBack }) {
             "Pie derecho - Largo: " + s2.largoDer + " cm | Ancho: " + s2.anchoDer + " cm",
             "Pie izquierdo - Largo: " + s2.largoIzq + " cm | Ancho: " + s2.anchoIzq + " cm",
             "Referencia para fabricar: " + refL + " cm x " + refA + " cm",
+            "",
+            "PEDIDO MEDICO: " + (s1.pedidoMedico === true ? "SI - " + (s1.recetaFile || "Receta adjunta") : "NO"),
             "",
             "FOTOS",
             "Vista superior: " + (s3.fotoArriba ? "Adjunta" : "No adjunta"),
