@@ -382,11 +382,37 @@ function UserFlow({ onBack }) {
     const [s3, setS3] = useState({ fotoArriba: "", fotoAtras: "" });
     const reset = () => { setStep(0); setSaving(false); setS1({ nombre: "", telefono: "", localidad: "", edad: "", pedidoMedico: null, recetaFile: "" }); setS2({ calzado: "", largoDer: "", anchoDer: "", largoIzq: "", anchoIzq: "" }); setS3({ fotoArriba: "", fotoAtras: "" }); };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+        setSaving(true);
         const now = new Date();
         const fecha = String(now.getDate()).padStart(2, "0") + "/" + String(now.getMonth() + 1).padStart(2, "0") + "/" + now.getFullYear();
         const refL = Math.max(parseFloat(s2.largoDer) || 0, parseFloat(s2.largoIzq) || 0).toFixed(1);
         const refA = Math.max(parseFloat(s2.anchoDer) || 0, parseFloat(s2.anchoIzq) || 0).toFixed(1);
+
+        // Guarda el pedido en Firestore antes de abrir WhatsApp
+        try {
+            await fbAdd({
+                patient: s1.nombre,
+                telefono: s1.telefono,
+                localidad: s1.localidad,
+                age: parseFloat(s1.edad) || 0,
+                calzado: s2.calzado,
+                largoDer: s2.largoDer,
+                anchoDer: s2.anchoDer,
+                largoIzq: s2.largoIzq,
+                anchoIzq: s2.anchoIzq,
+                pain: false,
+                painZone: "",
+                photos: (s3.fotoArriba ? 1 : 0) + (s3.fotoAtras ? 1 : 0),
+                status: "Nuevo",
+                date: fecha,
+                notes: "Pedido médico: " + (s1.pedidoMedico === true ? "Sí - " + (s1.recetaFile || "Receta adjunta") : "No"),
+            });
+        } catch (err) {
+            console.error("Error al guardar el pedido en Firestore:", err);
+            alert("No se pudo guardar el pedido en la base de datos. Se va a abrir WhatsApp igual, pero avisá al administrador.");
+        }
+
         const msg = [
             "Nuevo Pedido - J&V Ortopedia",
             "Fecha: " + fecha,
@@ -412,6 +438,7 @@ function UserFlow({ onBack }) {
         ].join("\n");
         const url = "https://wa.me/543825665892?text=" + encodeURIComponent(msg);
         window.open(url, "_blank");
+        setSaving(false);
         setStep(4);
     };
 
