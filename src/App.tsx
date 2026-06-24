@@ -297,10 +297,16 @@ function Step3({ data, setData, onNext, onBack }) {
                         <div style={{ flex: 1 }}>
                             <div style={{ fontWeight: 800, color: C.navy, fontSize: 15 }}>{p.label}</div>
                             <div style={{ fontWeight: 700, color: data[p.key] ? C.green : C.teal, fontSize: 13 }}>{p.sublabel}</div>
-                            <div style={{ fontSize: 11, color: C.gray, marginTop: 4, lineHeight: 1.5 }}>{data[p.key] ? "✓ Foto cargada correctamente" : p.desc}</div>
+                            <div style={{ fontSize: 11, color: C.gray, marginTop: 4, lineHeight: 1.5 }}>{data[p.key] === "Subiendo..." ? "Subiendo..." : data[p.key] ? "✓ Foto cargada correctamente" : p.desc}</div>
                         </div>
                     </div>
-                    <input type="file" id={p.key} accept="image/*" style={{ display: "none" }} onChange={e => setData({ ...data, [p.key]: e.target.files[0]?.name })} />
+                    <input type="file" id={p.key} accept="image/*" style={{ display: "none" }} onChange={async e => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        setData({ ...data, [p.key]: "Subiendo..." });
+                        const url = await uploadFile(file, "fotos");
+                        setData({ ...data, [p.key]: url });
+                    }} />
                 </label>
             ))}
             <div style={{ marginBottom: 18 }}>
@@ -404,6 +410,8 @@ function UserFlow({ onBack }) {
                 pain: false,
                 painZone: "",
                 photos: (s3.fotoArriba ? 1 : 0) + (s3.fotoAtras ? 1 : 0),
+                fotoArriba: s3.fotoArriba || "",
+                fotoAtras: s3.fotoAtras || "",
                 status: "Nuevo",
                 date: fecha,
                 notes: "Pedido médico: " + (s1.pedidoMedico === true ? "Sí - " + (s1.recetaFile || "Receta adjunta") : "No"),
@@ -512,8 +520,8 @@ function generatePDF(order) {
   </div></div>
   <div class="sec"><div class="st">Fotos adjuntas (${order.photos})</div>
     <div class="fg">
-      <div class="fb"><strong>Ambos pies</strong><br/>Vista superior</div>
-      <div class="fb"><strong>Ambos pies</strong><br/>Vista posterior</div>
+      <div>${order.fotoArriba ? `<img src="${order.fotoArriba}" style="width:100%;border-radius:10px;border:1px solid #D0DDE9;display:block" /><div style="text-align:center;font-size:11px;color:#6B7E99;margin-top:4px;font-weight:700">Vista superior</div>` : `<div class="fb"><strong>Ambos pies</strong><br/>Vista superior — sin foto</div>`}</div>
+      <div>${order.fotoAtras ? `<img src="${order.fotoAtras}" style="width:100%;border-radius:10px;border:1px solid #D0DDE9;display:block" /><div style="text-align:center;font-size:11px;color:#6B7E99;margin-top:4px;font-weight:700">Vista posterior</div>` : `<div class="fb"><strong>Ambos pies</strong><br/>Vista posterior — sin foto</div>`}</div>
     </div>
   </div>
   ${order.notes ? `<div class="sec"><div class="st">Observaciones</div><div class="sb"><div class="row"><span class="val" style="color:#E67E22">${order.notes}</span></div></div></div>` : ""}
